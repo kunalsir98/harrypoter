@@ -138,7 +138,7 @@ if user_input:
 # Footer
 st.markdown(
     """
-    <footer>Powered by LangChain & Streamlit | Designed with 💻 by [Your Name]</footer>
+    <footer>Powered by LangChain & Streamlit | Designed with 💻 by [kunal]</footer>
     """,
     unsafe_allow_html=True,
 )
