@@ -10,14 +10,13 @@ from langchain_community.vectorstores import FAISS
 import os
 import time
 from dotenv import load_dotenv
+from langchain.schema import Document
 
 # Load environment variables
 load_dotenv()
+groq_api_key = os.getenv('GROQ_KEY')
 
-# Load Groq API Key
-groq_api_key = os.getenv('GROQ_API_KEY')
-
-# Harry Potter-themed content (expanded context)
+# Harry Potter-themed content
 harry_potter_content = """
 The Harry Potter series is a collection of seven fantasy novels written by J.K. Rowling. The main plot revolves around a young wizard named Harry Potter and his adventures at Hogwarts School of Witchcraft and Wizardry. 
 
@@ -52,47 +51,54 @@ The Harry Potter series also touches on themes of friendship, sacrifice, and the
 
 """
 
-from langchain.schema import Document
-
 # Initialize session state
-if 'vector' not in st.session_state:
+if "vector" not in st.session_state:
     st.session_state.embeddings = HuggingFaceEmbeddings()
-    st.session_state.loader = WebBaseLoader('https://en.wikipedia.org/wiki/Harry_Potter')
-    
-    # Wrap the harry_potter_content into Document objects
+    st.session_state.loader = WebBaseLoader("https://en.wikipedia.org/wiki/Harry_Potter")
     harry_potter_documents = [Document(page_content=harry_potter_content)]
-    
-    # Now you can split documents
-    st.session_state.docs = harry_potter_documents
     st.session_state.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    st.session_state.final_documents = st.session_state.text_splitter.split_documents(st.session_state.docs)
+    st.session_state.final_documents = st.session_state.text_splitter.split_documents(harry_potter_documents)
     st.session_state.vectors = FAISS.from_documents(st.session_state.final_documents, st.session_state.embeddings)
 
-# Title and header
+# Page configuration
+st.set_page_config(
+    page_title="Harry Potter ChatBot",
+    page_icon="🪄",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# Custom CSS for styling
 st.markdown(
     """
     <style>
-        body { background-color: #0e1117; color: white; }
-        .title { font-size: 50px; font-weight: bold; text-align: center; color: #61dafb; }
-        .subheader { font-size: 20px; text-align: center; margin-bottom: 30px; color: #adb5bd; }
-        .response-box { padding: 20px; background-color: #1a1f27; border-radius: 10px; color: #ffffff; margin-top: 20px; }
-        .document-box { margin: 10px 0; padding: 10px; background-color: #2b2f38; border-radius: 5px; color: #e9ecef; }
-        .expander { background-color: #1c1e26; border-radius: 5px; padding: 10px; margin-top: 10px; }
+        body { background-color: #121212; color: #e1e1e1; font-family: 'Arial', sans-serif; }
+        .title { font-size: 50px; font-weight: bold; text-align: center; color: #ffcc00; }
+        .subheader { font-size: 20px; text-align: center; margin-bottom: 30px; color: #bbb; }
+        .response-box { padding: 20px; background-color: #2c2f33; border-radius: 10px; margin-top: 20px; }
+        .document-box { margin: 10px 0; padding: 15px; background-color: #202225; border-radius: 5px; }
+        .stTextInput input { background-color: #2c2f33; color: #e1e1e1; }
+        .expander { margin-top: 20px; padding: 10px; background-color: #2c2f33; border-radius: 5px; }
+        footer { margin-top: 50px; text-align: center; color: #bbb; font-size: 12px; }
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
-st.markdown('<div class="title">Harry Potter ChatBot</div>', unsafe_allow_html=True)
-st.markdown('<div class="subheader">Ask me anything about the Harry Potter universe!</div>', unsafe_allow_html=True)
+# Header
+st.markdown('<div class="title">🪄 Harry Potter ChatBot</div>', unsafe_allow_html=True)
+st.markdown('<div class="subheader">Explore the magical world of Harry Potter!</div>', unsafe_allow_html=True)
+
+# Display Harry Potter Image with custom width and height
+# Display Harry Potter Image with custom width and height for better responsiveness
+# Display Harry Potter Image with custom width, use_container_width to make it responsive
+st.image("images/harrypoter.jpg", width=800, use_container_width=True)  # Adjust the width as needed
+
 
 # Initialize LLM
-llm = ChatGroq(
-    groq_api_key=groq_api_key,
-    model_name='Llama3-8b-8192'
-)
+llm = ChatGroq(groq_api_key=groq_api_key, model_name="Llama3-8b-8192")
 
-# Define prompt template
+# Prompt Template
 prompt_template = ChatPromptTemplate.from_template(
     """
     Answer the question on provided context only.
@@ -107,38 +113,32 @@ document_chain = create_stuff_documents_chain(llm, prompt_template)
 retriever = st.session_state.vectors.as_retriever()
 retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
-# Prompt input
+# User Input
 user_input = st.text_input(
     "Ask your question:",
     placeholder="Who is the main character in Harry Potter?",
-    help="Enter any question about the Harry Potter universe."
+    help="Enter a question about Harry Potter."
 )
 
-# Response section
+# Generate Response
 if user_input:
-    start_time = time.process_time()
+    start_time = time.time()
     response = retrieval_chain.invoke({"input": user_input})
-    response_time = time.process_time() - start_time
+    response_time = time.time() - start_time
 
-    # Display the AI's response
-    st.markdown(f'<div class="response-box">🧠 **Response:** {response["answer"]}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="response-box"><b>Response:</b> {response["answer"]}</div>', unsafe_allow_html=True)
 
-    # Show additional document similarity search
-    with st.expander("Document similarity search", expanded=False):
-        for doc in response['context']:
+    # Document Similarity Search
+    with st.expander("📚 View Contextual Documents", expanded=False):
+        for doc in response["context"]:
             st.markdown(f'<div class="document-box">{doc.page_content}</div>', unsafe_allow_html=True)
-            st.write(" ")
 
-    # Display response time
-    st.markdown(f"**Response Time:** {response_time:.2f} seconds")
+    st.write(f"**Response Time:** {response_time:.2f} seconds")
 
 # Footer
 st.markdown(
     """
-    <style>
-        footer { font-size: 12px; text-align: center; margin-top: 50px; color: #adb5bd; }
-    </style>
-    <footer>Powered by LangChain & Streamlit | Designed with 💻 by [kunal]</footer>
+    <footer>Powered by LangChain & Streamlit | Designed with 💻 by [Your Name]</footer>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
