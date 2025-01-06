@@ -12,11 +12,10 @@ import time
 from dotenv import load_dotenv
 from langchain.schema import Document
 
-# Load environment variables
+
 load_dotenv()
 groq_api_key = os.getenv('GROQ_KEY')
 
-# Harry Potter-themed content
 harry_potter_content = """
 The Harry Potter series is a collection of seven fantasy novels written by J.K. Rowling. The main plot revolves around a young wizard named Harry Potter and his adventures at Hogwarts School of Witchcraft and Wizardry. 
 
@@ -51,7 +50,7 @@ The Harry Potter series also touches on themes of friendship, sacrifice, and the
 
 """
 
-# Initialize session state
+
 if "vector" not in st.session_state:
     st.session_state.embeddings = HuggingFaceEmbeddings()
     st.session_state.loader = WebBaseLoader("https://en.wikipedia.org/wiki/Harry_Potter")
@@ -68,7 +67,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for styling
+
 st.markdown(
     """
     <style>
@@ -85,13 +84,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Header
+
 st.markdown('<div class="title">🪄 Harry Potter ChatBot</div>', unsafe_allow_html=True)
 st.markdown('<div class="subheader">Explore the magical world of Harry Potter!</div>', unsafe_allow_html=True)
 
-# Display Harry Potter Image with custom width and height
-# Display Harry Potter Image with custom width and height for better responsiveness
-# Display Harry Potter Image with custom width, use_container_width to make it responsive
+
 st.image("images/harrypoter.jpg", width=800, use_container_width=True)  # Adjust the width as needed
 
 
